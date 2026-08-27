@@ -175,14 +175,3 @@ pytest tests/ -v
 ```
 
 ---
-
-## 🗺️ Roadmap
-
-| Phase | Scope | Status |
-|-------|-------|--------|
-| **0** | Repository structure, Flask backend, JSON IR specification | ✅ |
-| **1** | DXF parser, PDF parser (vector + scanned OCR), image parser | In Progress |
-| **2** | AI-based wall/opening detection model integration | In Progress |
-| **3** | 3D geometry engine, `.glb` export | Pending |
-| **4** | Frontend — browser-based 3D viewer | Pending |
-| **5** | Packaging, Docker, deployment | Pending |

@@ -1,0 +1,62 @@
+{
+  "_comment": "Sample IR output for a simple 5m × 4m single-room floor plan with one door and one window.",
+  "metadata": {
+    "unit": "meter",
+    "source_type": "dxf",
+    "scale_confidence": "high"
+  },
+  "walls": [
+    {
+      "id": "wall_1",
+      "start": { "x": 0.0, "y": 0.0 },
+      "end":   { "x": 5.0, "y": 0.0 },
+      "thickness": 0.2,
+      "height": 3.0
+    },
+    {
+      "id": "wall_2",
+      "start": { "x": 5.0, "y": 0.0 },
+      "end":   { "x": 5.0, "y": 4.0 },
+      "thickness": 0.2,
+      "height": 3.0
+    },
+    {
+      "id": "wall_3",
+      "start": { "x": 5.0, "y": 4.0 },
+      "end":   { "x": 0.0, "y": 4.0 },
+      "thickness": 0.2,
+      "height": 3.0
+    },
+    {
+      "id": "wall_4",
+      "start": { "x": 0.0, "y": 4.0 },
+      "end":   { "x": 0.0, "y": 0.0 },
+      "thickness": 0.2,
+      "height": 3.0
+    }
+  ],
+  "openings": [
+    {
+      "id": "door_1",
+      "type": "door",
+      "wall_id": "wall_1",
+      "position_on_wall": 2.5,
+      "width": 0.9,
+      "height": 2.1
+    },
+    {
+      "id": "window_1",
+      "type": "window",
+      "wall_id": "wall_2",
+      "position_on_wall": 2.0,
+      "width": 1.2,
+      "height": 1.4
+    }
+  ],
+  "floor_polygon": [
+    { "x": 0.0, "y": 0.0 },
+    { "x": 5.0, "y": 0.0 },
+    { "x": 5.0, "y": 4.0 },
+    { "x": 0.0, "y": 4.0 }
+  ]
+}

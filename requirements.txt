@@ -1,0 +1,36 @@
+# Core web framework
+flask>=3.0.0
+
+# DXF file parsing (Phase 1)
+ezdxf>=1.3.0
+
+# PDF parsing — vector and raster (Phase 1)
+pymupdf>=1.24.0
+
+# Computer Vision for raster floor-plan images (Phase 1)
+opencv-python>=4.10.0
+
+# Deep-learning inference — CPU only (Phase 1/2)
+# NOTE: Install the CPU build; do NOT add +cu* CUDA variants here.
+torch>=2.3.0
+torchvision>=0.18.0
+
+# Testing
+pytest>=8.0.0
+pytest-flask>=1.3.0
+
+# Fixture generation (dev / test only — synthetic PDF creation)
+reportlab>=4.0.0
+
+# Image Segmentation (Phase 2)
+segmentation-models-pytorch>=0.3.0
+safetensors>=0.4.0
+huggingface-hub>=0.20.0
+scikit-image
+
+# 3D Generation
+trimesh==5.0.0
+manifold3d==3.5.2
+mapbox-earcut==2.0.0
+shapely==2.0.6
+rtree>=1.4.0

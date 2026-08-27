@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2D to 3D Floor Plan Converter</title>
+    <style>
+        :root {
+            --bg: #1e1e24;
+            --surface: #2b2b36;
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --text: #e2e8f0;
+            --text-muted: #94a3b8;
+            --border: #3f3f4e;
+            --error: #ef4444;
+            --warning: #eab308;
+            --success: #22c55e;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1000px;
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 2rem;
+        }
+
+        @media (max-width: 768px) {
+            .container { grid-template-columns: 1fr; }
+        }
+
+        .panel {
+            background-color: var(--surface);
+            padding: 1.5rem;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        h2 { margin-top: 0; font-size: 1.25rem; }
+        
+        .form-group { margin-bottom: 1rem; }
+        .form-group label { display: block; margin-bottom: 0.5rem; font-weight: 500; font-size: 0.9rem;}
+        .form-group .hint { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem; display: block; }
+        
+        input[type="file"], input[type="number"] {
+            width: 100%;
+            padding: 0.5rem;
+            background-color: var(--bg);
+            border: 1px solid var(--border);
+            color: var(--text);
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        button {
+            width: 100%;
+            padding: 0.75rem;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        button:hover { background-color: var(--primary-hover); }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .spinner {
+            display: none;
+            width: 24px;
+            height: 24px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+            margin: 1rem auto;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .loading-text { text-align: center; color: var(--text-muted); font-size: 0.9rem; display: none; margin-bottom: 1rem;}
+
+        .alert {
+            padding: 1rem;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+            display: none;
+            font-size: 0.9rem;
+        }
+        .alert.error { background-color: rgba(239, 68, 68, 0.2); border: 1px solid var(--error); color: #fca5a5; }
+        .alert.warning { background-color: rgba(234, 179, 8, 0.2); border: 1px solid var(--warning); color: #fde047; }
+
+        .metadata-panel { display: none; margin-top: 1.5rem; }
+        .metadata-list { list-style: none; padding: 0; margin: 0; font-size: 0.9rem;}
+        .metadata-list li { margin-bottom: 0.5rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;}
+        .metadata-list strong { color: var(--text-muted); }
+
+        model-viewer {
+            width: 100%;
+            height: 500px;
+            background-color: #1a1a1a;
+            border-radius: 4px;
+            display: none;
+        }
+
+        .download-btn {
+            display: none;
+            text-align: center;
+            text-decoration: none;
+            background-color: var(--border);
+            color: var(--text);
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            margin-top: 1rem;
+            font-size: 0.9rem;
+            transition: background 0.2s;
+        }
+        .download-btn:hover { background-color: #4b4b5c; }
+    </style>
+    <!-- Import Google's model-viewer component -->
+    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
+</head>
+<body>
+
+    <h1>2D to 3D Floor Plan Converter</h1>
+
+    <div class="container">
+        <!-- Input Panel -->
+        <div class="panel">
+            <h2>Upload Layout</h2>
+            <form id="uploadForm">
+                <div class="form-group">
+                    <label for="file">File (DXF, PDF, Image)</label>
+                    <input type="file" id="file" name="file" accept=".dxf,.pdf,.png,.jpg,.jpeg" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="known_door_width_m">Scale Calibration (m)</label>
+                    <span class="hint">Optional. Provide known door width (e.g. 0.9) to drastically improve image scale accuracy.</span>
+                    <input type="number" id="known_door_width_m" name="known_door_width_m" step="0.01" min="0.1" placeholder="0.9">
+                </div>
+
+                <button type="submit" id="submitBtn">Convert to 3D</button>
+            </form>
+
+            <div class="spinner" id="spinner"></div>
+            <div class="loading-text" id="loadingText">Processing... this may take a few seconds.</div>
+
+            <div class="alert error" id="errorPanel"></div>
+            
+            <div id="warningsContainer"></div>
+
+            <div class="metadata-panel" id="metadataPanel">
+                <h2>Result Metadata</h2>
+                <ul class="metadata-list" id="metadataList"></ul>
+            </div>
+        </div>
+
+        <!-- 3D Preview Panel -->
+        <div class="panel">
+            <h2>3D Preview</h2>
+            <model-viewer id="modelViewer" alt="Generated 3D Floor Plan" camera-controls shadow-intensity="1"></model-viewer>
+            
+            <div id="legend" style="display: none; margin-top: 1rem; font-size: 0.9rem; text-align: center; border-top: 1px solid var(--border); padding-top: 1rem;">
+                <span style="display: inline-block; width: 15px; height: 15px; background: #ffc864; border: 1px solid #c8a050; vertical-align: middle; margin-right: 5px;"></span> 
+                <span style="margin-right: 15px;">Estimated Measurements</span>
+                <span style="display: inline-block; width: 15px; height: 15px; background: #dcdcd2; border: 1px solid #b0b0a0; vertical-align: middle; margin-right: 5px;"></span> 
+                <span>Measured Measurements</span>
+            </div>
+
+            <div class="alert error" id="viewerError" style="margin-top: 1rem;">Failed to load 3D model in viewer. File might be invalid.</div>
+            <a href="#" class="download-btn" id="downloadBtn" download>Download .glb</a>
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById('uploadForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const spinner = document.getElementById('spinner');
+        const loadingText = document.getElementById('loadingText');
+        const errorPanel = document.getElementById('errorPanel');
+        const warningsContainer = document.getElementById('warningsContainer');
+        const metadataPanel = document.getElementById('metadataPanel');
+        const metadataList = document.getElementById('metadataList');
+        
+        const modelViewer = document.getElementById('modelViewer');
+        const viewerError = document.getElementById('viewerError');
+        const downloadBtn = document.getElementById('downloadBtn');
+
+        // Handle model-viewer load errors
+        modelViewer.addEventListener('error', (event) => {
+            console.error('Model viewer error:', event);
+            viewerError.style.display = 'block';
+        });
+
+        function resetUI() {
+            errorPanel.style.display = 'none';
+            viewerError.style.display = 'none';
+            warningsContainer.innerHTML = '';
+            metadataPanel.style.display = 'none';
+            modelViewer.style.display = 'none';
+            document.getElementById('legend').style.display = 'none';
+            downloadBtn.style.display = 'none';
+            modelViewer.src = '';
+        }
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const fileInput = document.getElementById('file');
+            
+            if (!fileInput.files.length) {
+                showError("Please select a file to upload.");
+                return;
+            }
+
+            resetUI();
+            
+            submitBtn.disabled = true;
+            spinner.style.display = 'block';
+            loadingText.style.display = 'block';
+
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            
+            const doorWidth = document.getElementById('known_door_width_m').value;
+            if (doorWidth) {
+                formData.append('known_door_width_m', doorWidth);
+            }
+
+            try {
+                const response = await fetch('/api/convert', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json().catch(() => ({ error: "Invalid JSON response from server" }));
+
+                if (!response.ok) {
+                    showError(data.error || `Server returned ${response.status} ${response.statusText}`);
+                    return;
+                }
+
+                // Success
+                displayResults(data);
+
+            } catch (err) {
+                showError("Network error: Could not reach the server. Make sure the backend is running.");
+            } finally {
+                submitBtn.disabled = false;
+                spinner.style.display = 'none';
+                loadingText.style.display = 'none';
+            }
+        });
+
+        function showError(msg) {
+            errorPanel.textContent = msg;
+            errorPanel.style.display = 'block';
+        }
+
+        function displayResults(data) {
+            // Display warnings
+            if (data.warnings && data.warnings.length > 0) {
+                data.warnings.forEach(warn => {
+                    const alert = document.createElement('div');
+                    if (warn.startsWith("CRITICAL:")) {
+                        alert.className = 'alert error';
+                        alert.textContent = warn;
+                    } else {
+                        alert.className = 'alert warning';
+                        alert.textContent = `Warning: ${warn}`;
+                    }
+                    alert.style.display = 'block';
+                    warningsContainer.appendChild(alert);
+                });
+            }
+
+            // Display metadata
+            if (data.metadata) {
+                metadataList.innerHTML = `
+                    <li><strong>Wall Count:</strong> ${data.metadata.wall_count}</li>
+                    <li><strong>Estimated Walls:</strong> ${data.metadata.estimated_walls_count !== undefined ? data.metadata.estimated_walls_count : 0}</li>
+                    <li><strong>Opening Count:</strong> ${data.metadata.opening_count}</li>
+                    <li><strong>Scale Confidence:</strong> <span style="color: ${data.metadata.scale_confidence === 'high' ? 'var(--success)' : 'var(--warning)'}">${data.metadata.scale_confidence}</span></li>
+                    <li><strong>Processing Time:</strong> ${data.metadata.processing_time_sec}s</li>
+                `;
+                metadataPanel.style.display = 'block';
+            }
+
+            // Load 3D Preview
+            if (data.download_url) {
+                modelViewer.src = data.download_url;
+                modelViewer.style.display = 'block';
+                document.getElementById('legend').style.display = 'block';
+                
+                downloadBtn.href = data.download_url;
+                downloadBtn.style.display = 'block';
+            }
+        }
+    </script>
+</body>
+</html>
